@@ -256,6 +256,116 @@
                 createTaskElement(quadrantId, task.text, task.completed);
             });
         }
+        // โหลดข้อมูลเก่าที่บันทึกไว้ตอนเปิดหน้าเว็บ
+        document.addEventListener("DOMContentLoaded", function() {
+            loadTasks('q1');
+            loadTasks('q2');
+            loadTasks('q3');
+            loadTasks('q4');
+            createResetButton(); // สร้างปุ่มรีเซ็ต
+        });
+
+        function addTask(quadrantId) {
+            const input = document.getElementById(`input-${quadrantId}`);
+            const taskText = input.value.trim();
+            if (taskText === "") return;
+
+            createTaskElement(quadrantId, taskText, false);
+            input.value = "";
+            saveTasks(quadrantId);
+        }
+
+        function createTaskElement(quadrantId, text, isCompleted) {
+            const ul = document.getElementById(`list-${quadrantId}`);
+            const li = document.createElement('li');
+            li.className = 'todo-item';
+            if (isCompleted) li.classList.add('completed');
+
+            const textSpan = document.createElement('span');
+            textSpan.className = 'text';
+            textSpan.innerText = text;
+            textSpan.onclick = function() {
+                li.classList.toggle('completed');
+                saveTasks(quadrantId); // บันทึกสถานะการขีดฆ่า
+            };
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.innerHTML = '&times;';
+            deleteBtn.onclick = function() {
+                ul.removeChild(li);
+                saveTasks(quadrantId); // บันทึกหลังจากลบงาน
+            };
+
+            li.appendChild(textSpan);
+            li.appendChild(deleteBtn);
+            ul.appendChild(li);
+        }
+
+        function handleKeyPress(event, quadrantId) {
+            if (event.key === 'Enter') {
+                addTask(quadrantId);
+            }
+        }
+
+        function saveTasks(quadrantId) {
+            const ul = document.getElementById(`list-${quadrantId}`);
+            const items = ul.getElementsByClassName('todo-item');
+            const tasksArray = [];
+
+            for (let item of items) {
+                tasksArray.push({
+                    text: item.querySelector('.text').innerText,
+                    completed: item.classList.contains('completed')
+                });
+            }
+            localStorage.setItem(`tasks_${quadrantId}`, JSON.stringify(tasksArray));
+        }
+
+        function loadTasks(quadrantId) {
+            const savedTasks = localStorage.getItem(`tasks_${quadrantId}`);
+            if (!savedTasks) return;
+
+            const tasksArray = JSON.parse(savedTasks);
+            tasksArray.forEach(task => {
+                createTaskElement(quadrantId, task.text, task.completed);
+            });
+        }
+
+        // --- ฟังก์ชันที่อัปเกรดเพิ่มเข้ามา ---
+        function createResetButton() {
+            if (document.getElementById('reset-btn-container')) return;
+            
+            const container = document.createElement('div');
+            container.id = 'reset-btn-container';
+            container.style.textAlign = 'center';
+            container.style.marginTop = '20px';
+            
+            const btn = document.createElement('button');
+            btn.innerText = '🔄 เริ่มต้นวันใหม่ (เอาเส้นขีดฆ่าออกทั้งหมด)';
+            btn.style.padding = '10px 20px';
+            btn.style.fontSize = '1rem';
+            btn.style.backgroundColor = '#e67e22';
+            btn.style.color = 'white';
+            btn.style.border = 'none';
+            btn.style.borderRadius = '6px';
+            btn.style.cursor = 'pointer';
+            btn.style.fontWeight = 'bold';
+            
+            btn.onclick = function() {
+                if (confirm('คุณครูต้องการเอาเส้นขีดฆ่าของงานทั้งหมดออกเพื่อเริ่มวันใหม่ใช่ไหมครับ?')) {
+                    const allItems = document.getElementsByClassName('todo-item');
+                    for (let item of allItems) {
+                        item.classList.remove('completed');
+                    }
+                    // บันทึกค่าใหม่ลงระบบหลังรีเซ็ต
+                    saveTasks('q1'); saveTasks('q2'); saveTasks('q3'); saveTasks('q4');
+                }
+            };
+            
+            container.appendChild(btn);
+            document.body.appendChild(container);
+        }
     </script>
 </body>
 </html>
